@@ -1,0 +1,333 @@
+MONGO
+
+// Switch to (or create) database
+1)
+use CollegeDB
+
+// 1️⃣ Create collection and insert five student documents
+db.Students.insertMany([
+  { name: "Amit", dept: "CSE", marks: 85 },
+  { name: "Riya", dept: "IT", marks: 90 },
+  { name: "Karan", dept: "ECE", marks: 78 },
+  { name: "Priya", dept: "MECH", marks: 88 },
+  { name: "Neha", dept: "CSE", marks: 92 }
+])
+
+// 2️⃣ Update marks of one student
+db.Students.updateOne(
+  { name: "Amit" },
+  { $set: { marks: 95 } }
+)
+
+// 3️⃣ Delete one record
+db.Students.deleteOne({ name: "Karan" })
+
+// 4️⃣ Display all records
+db.Students.find().pretty()
+
+2)
+[
+  { "name": "Laptop", "category": "Electronics", "price": 55000 },
+  { "name": "Mobile", "category": "Electronics", "price": 15000 },
+  { "name": "Table", "category": "Furniture", "price": 8000 },
+  { "name": "Camera", "category": "Electronics", "price": 32000 },
+  { "name": "Chair", "category": "Furniture", "price": 3000 }
+]
+
+mongoimport --db ShopDB --collection Products --file products.json --jsonArray
+
+use ShopDB
+
+// 1️⃣ Display all products in “Electronics” category
+db.Products.find({ category: "Electronics" }).pretty()
+
+// 2️⃣ Count total items priced above ₹10,000
+db.Products.countDocuments({ price: { $gt: 10000 } })
+
+3)
+use CompanyDB
+
+// Sample employee data
+db.Employees.insertMany([
+  { name: "Rahul", dept: "HR", salary: 45000 },
+  { name: "Sneha", dept: "IT", salary: 60000 },
+  { name: "Amit", dept: "Finance", salary: 55000 },
+  { name: "Ravi", dept: "IT", salary: 70000 },
+  { name: "Neha", dept: "HR", salary: 50000 }
+])
+
+// Aggregation pipeline: group by dept and calculate average salary
+db.Employees.aggregate([
+  { $group: { _id: "$dept", avgSalary: { $avg: "$salary" } } },
+  { $sort: { avgSalary: -1 } }
+])
+
+
+4)
+from pymongo import MongoClient
+# 1. Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/')
+db = client['company_db']
+employees = db['employees']
+# 2. Insert 3 employee documents
+employee_data = [
+	{"name": "John", "department": "IT", "salary": 60000},
+	{"name": "Alice", "department": "HR", "salary": 45000},
+	{"name": "Bob", "department": "Finance", "salary": 75000}
+]
+employees.insert_many(employee_data)
+# 3. Retrieve records where salary > 50,000
+high_earners = employees.find({"salary": {"$gt": 50000}})
+print("Employees with salary > 50,000:")
+for emp in high_earners:
+	print(emp)
+# 4. Update one record
+employees.update_one(
+	{"name": "Alice"},
+	{"$set": {"salary": 52000}}
+)
+# Print all documents
+print("\nAll employees:")
+for emp in employees.find():
+	print(emp)
+
+
+HIVE
+5)
+-- Step 1: Switch to or create a database
+CREATE DATABASE IF NOT EXISTS filmdb;
+USE filmdb;
+
+-- Step 2: Create external table for CSV file
+CREATE TABLE IF NOT EXISTS movies (
+  title STRING,
+  type STRING,
+  release_year INT,
+  country STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+-- Step 3: Load data from HDFS or local path ----------------hdfs dfs -put movies.csv /hive
+-- If file is in HDFS:
+-- LOAD DATA INPATH '/user/surya/movies.csv' INTO TABLE movies;
+-- Or from local:
+LOAD DATA LOCAL INPATH '/home/surya/movies.csv' INTO TABLE movies;
+
+-- Step 4: Display number of movies per country
+SELECT country, COUNT(*) AS movie_count
+FROM movies
+GROUP BY country;
+
+-- Step 5: Show top 5 recent release years
+SELECT DISTINCT release_year
+FROM movies
+ORDER BY release_year DESC
+LIMIT 5;
+
+6)
+-- Step 1: Use or create database
+CREATE DATABASE IF NOT EXISTS salesdb;
+USE salesdb;
+
+-- Step 2: Create table for sales data
+CREATE TABLE IF NOT EXISTS sales_data (
+  region STRING,
+  product STRING,
+  amount INT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+STORED AS TEXTFILE;
+
+-- Step 3: Load data
+LOAD DATA LOCAL INPATH '/home/surya/sales_data.csv' INTO TABLE sales_data;
+
+-- Step 4: Calculate total sales per region
+SELECT region, SUM(amount) AS total_sales
+FROM sales_data
+GROUP BY region;
+
+-- Step 5: Sort results by total sales (descending)
+SELECT region, SUM(amount) AS total_sales
+FROM sales_data
+GROUP BY region
+ORDER BY total_sales DESC;
+
+7)
+CREATE DATABASE IF NOT EXISTS salesdb;
+USE salesdb;
+
+-- Create customers table
+CREATE EXTERNAL TABLE customers (
+  cust_id INT,
+  name STRING,
+  city STRING
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION '/com/example/hive/customers/';
+
+-- Create orders table
+CREATE EXTERNAL TABLE orders (
+  order_id INT,
+  cust_id INT,
+  amount FLOAT
+)
+ROW FORMAT DELIMITED
+FIELDS TERMINATED BY ','
+LOCATION '/com/example/hive/orders/';
+
+SELECT c.name, SUM(o.amount) AS total_amount
+FROM customers c
+JOIN orders o
+ON c.cust_id = o.cust_id
+GROUP BY c.name
+ORDER BY total_amount DESC;
+
+
+
+8)
+#uppercase jar file run 
+UpperCaseUDF.java                                                                     
+
+package com.example.hive.udf;
+
+import org.apache.hadoop.hive.ql.exec.UDF;
+import org.apache.hadoop.io.Text;
+
+public class UpperCaseUDF extends UDF {
+    public Text evaluate(Text input) {
+        if (input == null) return null;
+        return new Text(input.toString().toUpperCase());
+    }
+}
+
+hadoop classpath
+find / -name "hive-exec*.jar" 2>/dev/null
+
+javac -cp "/home/talentum/hadoop/share/hadoop/common/lib/*:/home/talentum/hadoop/share/hadoop/common/*:/home/talentum/hadoop/share/hadoop/hdfs/*:/home/talentum/hadoop/share/hadoop/yarn/*:/home/talentum/hadoop/share/hadoop/mapreduce/*:/home/talentum/hive/lib/hive-exec-2.3.6.jar" -d . UpperCaseUDF.java
+
+
+javac -cp "/home/talentum/hadoop/etc/hadoop:/home/talentum/hadoop/share/hadoop/common/lib/*:/home/talentum/hadoop/share/hadoop/common/*:/home/talentum/hadoop/share/hadoop/hdfs:/home/talentum/hadoop/share/hadoop/hdfs/lib/*:/home/talentum/hadoop/share/hadoop/hdfs/*:/home/talentum/hadoop/share/hadoop/yarn/lib/*:/home/talentum/hadoop/share/hadoop/yarn/*:/home/talentum/hadoop/share/hadoop/mapreduce/lib/*:/home/talentum/hadoop/share/hadoop/mapreduce/*:/home/talentum/hadoop/contrib/capacity-scheduler/*.jar:
+/home/talentum/hive/lib/hive-exec-2.3.6.jar" -d . Ura.java
+
+
+jar -cvf uppercase-udf.jar com/example/hive/udf/UpperCaseUDF.class
+ 
+ADD JAR /home/talentum/uppercase-udf.jar;
+
+CREATE TEMPORARY FUNCTION to_upper AS 'com.example.hive.udf.UpperCaseUDF';
+
+SELECT emp_id, to_upper(emp_name) AS emp_name_upper FROM employees;
+
+
+
+PIG
+9) 
+Amit,85
+Riya,65
+Karan,72
+Priya,90
+Neha,55
+
+ll.pig
+-- Load the student data (name, marks)
+students = LOAD 'students.txt' USING PigStorage(',') AS (name:chararray, marks:int);
+
+-- Filter students who scored above 70
+high_scorers = FILTER students BY marks > 70;
+
+-- Display names and marks
+DUMP high_scorers;
+
+pig -x local ll.pig
+
+
+10)
+Electronics,55000
+Furniture,20000
+Electronics,30000
+Clothing,15000
+Furniture,25000
+
+
+-- Load data (category, amount)
+sales = LOAD 'sales.txt' USING PigStorage(',') AS (category:chararray, amount:int);
+
+-- Group by product category
+grouped = GROUP sales BY category;
+
+-- Calculate average sales per category
+avg_sales = FOREACH grouped GENERATE group AS category, AVG(sales.amount) AS avg_amount;
+
+-- Display the results
+DUMP avg_sales;
+
+
+pig -x local slip10_grouping_aggregation.pigA
+
+
+11)
+1,Amit,101
+2,Neha,102
+3,Ravi,101
+4,Sita,103
+
+
+101,HR
+102,Finance
+103,IT
+
+
+-- Load employee details (emp_id, name, dept_id)
+emp = LOAD 'employee_details.txt' USING PigStorage(',') AS (emp_id:int, name:chararray, dept_id:int);
+
+-- Load department details (dept_id, dept_name)
+dept = LOAD 'department.txt' USING PigStorage(',') AS (dept_id:int, dept_name:chararray);
+
+-- Perform join on dept_id
+joined = JOIN emp BY dept_id, dept BY dept_id;
+
+-- Display employee name and department name
+result = FOREACH joined GENERATE emp::name AS employee_name, dept::dept_name AS department_name;
+
+DUMP result;
+
+pig -x local slip11_join_operation.pig
+
+12)
+Money Heist,TV Show,2017
+Interstellar,Movie,2014
+Friends,TV Show,1994
+Dark,TV Show,2017
+Stranger Things,TV Show,2016
+Inception,Movie,2010
+Breaking Bad,TV Show,2008
+The Crown,TV Show,2016
+Sherlock,TV Show,2010
+The Witcher,TV Show,2019
+Wednesday,TV Show,2022
+
+
+-- Load data (title, type, year)
+movies = LOAD 'movies.txt' USING PigStorage(',') AS (title:chararray, type:chararray, year:int);
+
+-- Filter only TV Shows
+tvshows = FILTER movies BY type == 'TV Show';
+
+-- Sort by year in descending order
+sorted_shows = ORDER tvshows BY year DESC;
+
+-- Limit to top 10 results
+top10 = LIMIT sorted_shows 10;
+
+-- Display
+DUMP top10;
+
+
+pig -x local slip12_sorting_filtering.pig
+
+
+
